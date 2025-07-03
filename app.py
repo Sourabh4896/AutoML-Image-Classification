@@ -108,3 +108,33 @@ if st.button("Build Model"):
     st.session_state.model = model
     st.success(f"✅ {model_type} built and compiled successfully.")
     st.text(model.summary())
+
+
+from utils.train import train_model, plot_training_history
+
+st.subheader("🛠️ Step 6: Train Your Model")
+
+epochs = st.slider("Select Epochs", 1, 50, 10)
+batch_size = st.slider("Batch Size", 8, 128, 32)
+
+if st.button("Start Training"):
+    required_keys = ['model', 'X_train', 'y_train', 'X_val', 'y_val']
+    if all(k in st.session_state for k in required_keys):
+        model = st.session_state.model
+        X_train = st.session_state.X_train
+        y_train = st.session_state.y_train
+        X_val = st.session_state.X_val
+        y_val = st.session_state.y_val
+
+        with st.spinner("Training in progress..."):
+            history = train_model(model, X_train, y_train, X_val, y_val, batch_size=batch_size, epochs=epochs)
+            st.session_state.history = history
+            st.success("✅ Training completed!")
+
+        st.subheader("📈 Training Metrics")
+        fig_acc, fig_loss = plot_training_history(history)
+        st.pyplot(fig_acc)
+        st.pyplot(fig_loss)
+
+    else:
+        st.error("❌ Please build the model and split dataset before training.")
