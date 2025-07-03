@@ -1,0 +1,20 @@
+# --- Core Dependencies ---
+streamlit
+tensorflow
+numpy
+pandas
+scikit-learn
+matplotlib
+seaborn
+opencv-python-headless
+tqdm
+
+# --- Optional but recommended ---
+optuna
+tensorflow-model-optimization
+
+# --- For image augmentation ---
+Pillow
+
+# --- Fix compatibility issues ---
+protobuf<=3.20.*
