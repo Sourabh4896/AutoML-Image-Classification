@@ -84,3 +84,27 @@ if st.button("Split Dataset"):
             st.write(f"Test Samples: {len(X_test)}")
     else:
         st.warning("⚠️ Please preprocess the dataset before splitting.")
+
+
+from utils.models import get_custom_cnn, get_mobilenet_model, get_resnet_model
+
+st.subheader("🧠 Step 4: Model Selection")
+
+model_type = st.selectbox("Choose Model", ["Custom CNN", "MobileNetV2", "ResNet50"])
+loss_fn = st.selectbox("Choose Loss Function", ["sparse_categorical_crossentropy", "categorical_crossentropy"])
+optimizer_name = st.selectbox("Choose Optimizer", ["Adam", "SGD", "RMSprop"])
+
+input_shape = (128, 128, 3)
+num_classes = len(st.session_state.label_map)
+
+if st.button("Build Model"):
+    if model_type == "Custom CNN":
+        model = get_custom_cnn(input_shape, num_classes, loss_fn, optimizer_name)
+    elif model_type == "MobileNetV2":
+        model = get_mobilenet_model(input_shape, num_classes, loss_fn, optimizer_name)
+    elif model_type == "ResNet50":
+        model = get_resnet_model(input_shape, num_classes, loss_fn, optimizer_name)
+
+    st.session_state.model = model
+    st.success(f"✅ {model_type} built and compiled successfully.")
+    st.text(model.summary())
