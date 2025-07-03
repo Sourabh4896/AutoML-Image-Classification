@@ -1,55 +1,50 @@
 # utils/preprocessing.py
 
 import os
-import cv2
 import numpy as np
+import cv2
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
-from sklearn.preprocessing import LabelEncoder
-from tqdm import tqdm
 
-def load_and_preprocess_images(data_dir, img_size=(128, 128), normalize=True):
+def load_and_preprocess_images(data_dir, image_size=(128, 128), normalize=True):
     """
-    Loads and preprocesses images from subfolders in data_dir.
-    Assumes each subfolder represents a class.
-    
-    Returns:
-        X: numpy array of images
-        y: list of labels
-        class_names: sorted list of class names
+    Load all images from subfolders, resize, normalize (optional).
+    Returns: numpy arrays X (images), y (labels), label_map
     """
     X = []
     y = []
-    class_names = sorted(os.listdir(data_dir))
+    label_map = {}
+    class_folders = sorted([f for f in os.listdir(data_dir) if os.path.isdir(os.path.join(data_dir, f))])
 
-    for class_name in class_names:
-        class_path = os.path.join(data_dir, class_name)
-        if not os.path.isdir(class_path):
-            continue
-        for file in tqdm(os.listdir(class_path), desc=f"Processing {class_name}"):
-            if file.lower().endswith(('.png', '.jpg', '.jpeg')):
-                img_path = os.path.join(class_path, file)
+    for idx, folder in enumerate(class_folders):
+        label_map[folder] = idx
+        folder_path = os.path.join(data_dir, folder)
+        for file in os.listdir(folder_path):
+            if file.lower().endswith(('.jpg', '.jpeg', '.png')):
+                img_path = os.path.join(folder_path, file)
                 img = cv2.imread(img_path)
-                img = cv2.resize(img, img_size)
+                if img is None:
+                    continue  # Skip unreadable files
+                img = cv2.resize(img, image_size)
+                img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
                 if normalize:
-                    img = img / 255.0  # Normalize pixel values to 0-1
+                    img = img / 255.0
                 X.append(img)
-                y.append(class_name)
+                y.append(idx)
 
-    # Encode labels to integers
-    label_encoder = LabelEncoder()
-    y_encoded = label_encoder.fit_transform(y)
-    return np.array(X), np.array(y_encoded), label_encoder.classes_
+    return np.array(X), np.array(y), label_map
 
-
-def get_data_augmentor():
+def get_augmentor():
     """
-    Returns an ImageDataGenerator instance with common augmentations.
+    Returns a Keras ImageDataGenerator for augmentation
     """
-    return ImageDataGenerator(
+    datagen = ImageDataGenerator(
         rotation_range=20,
+        zoom_range=0.15,
         width_shift_range=0.1,
         height_shift_range=0.1,
-        zoom_range=0.2,
+        shear_range=0.15,
         horizontal_flip=True,
-        fill_mode='nearest'
+        fill_mode="nearest"
     )
+    return datagen
+

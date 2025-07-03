@@ -41,3 +41,25 @@ if data_dir and os.path.exists(data_dir):
 else:
     if data_dir:
         st.error("❌ The provided folder path does not exist. Please check and try again.")
+
+from utils.preprocessing import load_and_preprocess_images, get_augmentor
+import matplotlib.pyplot as plt
+
+st.subheader("🧪 Step 2: Preprocessing Images")
+if st.button("Preprocess Now"):
+    with st.spinner("Loading and preprocessing images..."):
+        X, y, label_map = load_and_preprocess_images(data_dir)
+        st.success(f"✅ Loaded {len(X)} images with {len(label_map)} classes.")
+    
+    # Show sample preprocessed images
+    st.subheader("🔍 Preprocessed Samples")
+    for i in range(5):
+        st.image(X[i], caption=f"Label: {y[i]}", width=150)
+
+    # Augment preview
+    st.subheader("🌀 Preview Augmented Image")
+    datagen = get_augmentor()
+    sample_img = X[0].reshape((1,) + X[0].shape)
+    aug_iter = datagen.flow(sample_img, batch_size=1)
+    aug_img = next(aug_iter)[0]
+    st.image(aug_img, caption="Augmented Example", width=150)
