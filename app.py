@@ -138,3 +138,43 @@ if st.button("Start Training"):
 
     else:
         st.error("❌ Please build the model and split dataset before training.")
+
+
+from utils.evaluate import evaluate_model, plot_confusion_matrix, plot_roc_curve
+
+st.subheader("📊 Step 7: Model Evaluation")
+
+if st.button("Evaluate Model"):
+    required_keys = ['model', 'X_test', 'y_test', 'label_map']
+    if all(k in st.session_state for k in required_keys):
+        model = st.session_state.model
+        X_test = st.session_state.X_test
+        y_test = st.session_state.y_test
+        label_map = st.session_state.label_map
+
+        with st.spinner("Evaluating model..."):
+            acc, prec, rec, f1, cm, report = evaluate_model(model, X_test, y_test, label_map)
+
+            st.success("✅ Evaluation completed.")
+            st.markdown(f"**Accuracy:** `{acc:.4f}`")
+            st.markdown(f"**Precision:** `{prec:.4f}`")
+            st.markdown(f"**Recall:** `{rec:.4f}`")
+            st.markdown(f"**F1 Score:** `{f1:.4f}`")
+
+            st.text("Classification Report:")
+            st.code(report)
+
+            st.subheader("📌 Confusion Matrix")
+            fig_cm = plot_confusion_matrix(cm, label_map)
+            st.pyplot(fig_cm)
+
+            st.subheader("📈 ROC Curve (if binary classification)")
+            probs = model.predict(X_test)
+            fig_roc = plot_roc_curve(y_test, probs)
+            if fig_roc:
+                st.pyplot(fig_roc)
+            else:
+                st.info("ROC curve only available for binary classification.")
+
+    else:
+        st.warning("⚠️ Please make sure model and test data are available.")

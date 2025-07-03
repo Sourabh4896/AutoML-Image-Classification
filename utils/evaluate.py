@@ -2,66 +2,66 @@
 
 import numpy as np
 import matplotlib.pyplot as plt
-import seaborn as sns
 from sklearn.metrics import (
-    classification_report,
-    confusion_matrix,
-    roc_curve,
-    auc,
-    accuracy_score,
-    precision_score,
-    recall_score,
-    f1_score
+    classification_report, confusion_matrix,
+    accuracy_score, precision_score,
+    recall_score, f1_score, roc_curve, auc
 )
+import seaborn as sns
+import streamlit as st
 
 
-def evaluate_model(model, X_test, y_test, class_names, use_sparse_labels=True):
+def evaluate_model(model, X_test, y_test, label_map):
     """
-    Evaluates the model on test data and returns predictions and metrics.
+    Evaluates the model and returns performance metrics and confusion matrix.
     """
-    y_probs = model.predict(X_test)
+    y_pred_probs = model.predict(X_test)
+    y_pred = np.argmax(y_pred_probs, axis=1)
 
-    # Get predictions
-    y_pred = np.argmax(y_probs, axis=1)
+    accuracy = accuracy_score(y_test, y_pred)
+    precision = precision_score(y_test, y_pred, average='weighted', zero_division=0)
+    recall = recall_score(y_test, y_pred, average='weighted', zero_division=0)
+    f1 = f1_score(y_test, y_pred, average='weighted', zero_division=0)
 
-    # Convert one-hot to int if needed
-    if not use_sparse_labels:
-        y_test = np.argmax(y_test, axis=1)
+    # ✅ Convert label_map values to string target names
+    target_names = [str(label_map[i]) for i in sorted(label_map.keys())]
 
-    report = classification_report(y_test, y_pred, target_names=class_names, output_dict=True)
+    report = classification_report(y_test, y_pred, target_names=target_names, zero_division=0)
     cm = confusion_matrix(y_test, y_pred)
 
-    return y_test, y_pred, report, cm
+    return accuracy, precision, recall, f1, cm, report
 
 
-def plot_confusion_matrix(cm, class_names):
+
+def plot_confusion_matrix(cm, label_map):
     """
     Plots confusion matrix using seaborn.
     """
-    plt.figure(figsize=(8, 6))
-    sns.heatmap(cm, annot=True, fmt="d", cmap="Blues", xticklabels=class_names, yticklabels=class_names)
-    plt.xlabel("Predicted")
-    plt.ylabel("Actual")
-    plt.title("Confusion Matrix")
-    return plt.gcf()
+    fig, ax = plt.subplots()
+    sns.heatmap(cm, annot=True, fmt='d', cmap='Blues',
+                xticklabels=label_map.values(), yticklabels=label_map.values())
+    ax.set_xlabel('Predicted Labels')
+    ax.set_ylabel('True Labels')
+    ax.set_title('Confusion Matrix')
+    plt.tight_layout()
+    return fig
 
 
-def plot_roc_auc(model, X_test, y_test):
+def plot_roc_curve(y_test, y_pred_probs):
     """
-    Plots ROC curve for binary classification only.
+    Plots ROC curve (binary classification only).
     """
-    if len(np.unique(y_test)) != 2:
-        return None  # ROC only applies to binary classification
+    if y_pred_probs.shape[1] != 2:
+        return None  # ROC curve is for binary only
 
-    y_score = model.predict(X_test)[:, 1]
-    fpr, tpr, thresholds = roc_curve(y_test, y_score)
+    fpr, tpr, _ = roc_curve(y_test, y_pred_probs[:, 1])
     roc_auc = auc(fpr, tpr)
 
-    plt.figure(figsize=(6, 4))
-    plt.plot(fpr, tpr, color="darkorange", lw=2, label="AUC = %0.2f" % roc_auc)
-    plt.plot([0, 1], [0, 1], color="navy", lw=2, linestyle="--")
-    plt.xlabel("False Positive Rate")
-    plt.ylabel("True Positive Rate")
-    plt.title("ROC Curve")
-    plt.legend(loc="lower right")
-    return plt.gcf()
+    fig, ax = plt.subplots()
+    ax.plot(fpr, tpr, color='darkorange', lw=2, label=f'ROC curve (AUC = {roc_auc:.2f})')
+    ax.plot([0, 1], [0, 1], color='navy', lw=2, linestyle='--')
+    ax.set_xlabel('False Positive Rate')
+    ax.set_ylabel('True Positive Rate')
+    ax.set_title('Receiver Operating Characteristic')
+    ax.legend(loc="lower right")
+    return fig
